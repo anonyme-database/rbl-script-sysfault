@@ -1,6 +1,5 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,31 +7,32 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-
 local AimbotEnabled = false
 local IsAiming = false
 local EspEnabled = false
 local NoclipEnabled = false
-local FlyEnabled = false
 local HitboxEnabled = false
+
+-- --- CONFIGURATION SPEED ---
+local SpeedEnabled = false
+local WalkSpeedValue = 16 -- Vitesse par défaut de Roblox
 
 -- --- CONFIGURATION FOV ---
 local FovEnabled = false
-local FovRadius = 100 -- Taille par défaut
-local FovCircle = Drawing.new("Circle") -- Utilise la librairie Drawing de l'exécuteur
+local FovRadius = 100 
+local FovCircle = Drawing.new("Circle") 
 
--- Configuration visuelle du Cercle
 FovCircle.Visible = false
 FovCircle.Thickness = 1
 FovCircle.Color = Color3.fromRGB(255, 255, 255)
 FovCircle.Transparency = 1
 FovCircle.Filled = false
 
--- --- CONFIGURATION FENÊTRE ---
+-- --- FENÊTRE PRINCIPALE ---
 local Window = Rayfield:CreateWindow({
     Name = "By Sysfault",
     LoadingTitle = "Sysfault Hub v4",
-    LoadingSubtitle = "Aimbot + FOV Zone",
+    LoadingSubtitle = "Aimbot + Speed Custom",
     ConfigurationSaving = { Enabled = false },
     KeySystem = false
 })
@@ -41,34 +41,35 @@ local CombatTab = Window:CreateTab("Combat", 4483362458)
 local MoveTab = Window:CreateTab("Déplacement", 4483362458)
 local VisualTab = Window:CreateTab("Visuel", 4483362458)
 
--- --- SYSTÈME DE COULEUR (RGB) ---
+-- --- RGB THEME & FOV COLOR ---
 task.spawn(function()
     while true do
         for i = 0, 1, 0.005 do
             local color = Color3.fromHSV(i, 1, 1)
             Rayfield:ModifyTheme({AccentColor = color})
-            -- Le cercle change aussi de couleur !
             FovCircle.Color = color
             task.wait(0.02)
         end
     end
 end)
 
--- --- GESTION DU CERCLE FOV ---
+-- --- GESTION SPEED (BOUCLE) ---
 RunService.RenderStepped:Connect(function()
-    -- Le cercle suit la souris
-    FovCircle.Position = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
-    FovCircle.Radius = FovRadius
-    
-    -- Affiche le cercle seulement si l'option est activée
-    if FovEnabled then
-        FovCircle.Visible = true
-    else
-        FovCircle.Visible = false
+    if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = WalkSpeedValue
+    elseif not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        -- On ne force pas le 16 au cas où un autre script légitime du jeu change la vitesse
     end
 end)
 
--- --- 1. AIMBOT (AVEC FOV CHECK) ---
+-- --- GESTION DU CERCLE FOV ---
+RunService.RenderStepped:Connect(function()
+    FovCircle.Position = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+    FovCircle.Radius = FovRadius
+    FovCircle.Visible = FovEnabled
+end)
+
+-- --- AIMBOT LOGIC ---
 local function GetClosestPlayer()
     local target = nil
     local shortestDist = math.huge
@@ -80,10 +81,9 @@ local function GetClosestPlayer()
                 if onScreen then
                     local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
                     
-                    -- NOUVEAU : On vérifie si le joueur est DANS le cercle (si FOV est activé)
                     if dist < shortestDist then
                         if FovEnabled and dist > FovRadius then
-                            -- Si le joueur est hors du cercle, on l'ignore
+                            -- Hors zone
                         else
                             shortestDist = dist
                             target = v
@@ -120,68 +120,53 @@ end)
 CombatTab:CreateToggle({
     Name = "Aimbot (Clic Droit)",
     CurrentValue = false,
-    Callback = function(Value)
-        AimbotEnabled = Value
-    end
+    Callback = function(Value) AimbotEnabled = Value end
 })
 
 CombatTab:CreateToggle({
     Name = "Afficher FOV (Zone)",
     CurrentValue = false,
-    Callback = function(Value)
-        FovEnabled = Value
-    end
+    Callback = function(Value) FovEnabled = Value end
 })
 
 CombatTab:CreateSlider({
-    Name = "Rayon de la Zone (Taille)",
+    Name = "Rayon de la Zone",
     Range = {50, 800},
     Increment = 10,
     Suffix = "px",
     CurrentValue = 100,
-    Flag = "FovSize",
-    Callback = function(Value)
-        FovRadius = Value
-    end
+    Callback = function(Value) FovRadius = Value end
 })
 
-CombatTab:CreateToggle({
-    Name = "Hitbox Géante",
+-- --- INTERFACE DÉPLACEMENT ---
+MoveTab:CreateToggle({
+    Name = "Activer Speed Boost",
     CurrentValue = false,
-    Callback = function(Value)
-        HitboxEnabled = Value
-        if not Value then
-            for _, v in pairs(Players:GetPlayers()) do
-                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
-                    v.Character.Head.Size = Vector3.new(2, 1, 1)
-                    v.Character.Head.Transparency = 0
-                end
-            end
+    Callback = function(Value) 
+        SpeedEnabled = Value 
+        if not Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16 -- Remise à zéro
         end
     end
 })
 
--- --- BOUCLE HITBOX ---
-RunService.RenderStepped:Connect(function()
-    if HitboxEnabled then
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
-                v.Character.Head.Size = Vector3.new(5, 5, 5)
-                v.Character.Head.CanCollide = false
-                v.Character.Head.Transparency = 0.5
-            end
-        end
+MoveTab:CreateSlider({
+    Name = "Vitesse de marche",
+    Range = {16, 300},
+    Increment = 1,
+    Suffix = "ws",
+    CurrentValue = 16,
+    Callback = function(Value)
+        WalkSpeedValue = Value
     end
-end)
-
--- --- RESTE DES FONCTIONS (FLY, NOCLIP, ESP) ---
--- (J'ai condensé ici pour que ce soit propre, copie les blocs du script précédent pour Fly/Noclip/ESP si besoin, ou garde ceux ci-dessous)
+})
 
 MoveTab:CreateToggle({
     Name = "Noclip",
     CurrentValue = false,
     Callback = function(Value) NoclipEnabled = Value end
 })
+
 RunService.Stepped:Connect(function()
     if NoclipEnabled and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -190,15 +175,13 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Fly et ESP (Code identique au précédent pour assurer la compatibilité)
--- ... (Si tu as besoin que je remette tout le bloc Fly/ESP dis le moi, mais c'est le même code)
-
--- Exemple simple ESP pour compléter ce script
+-- --- INTERFACE VISUEL (ESP) ---
 VisualTab:CreateToggle({
     Name = "ESP Arc-en-ciel",
     CurrentValue = false,
     Callback = function(Value) EspEnabled = Value end
 })
+
 task.spawn(function()
     while true do
         if EspEnabled then
