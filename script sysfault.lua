@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
--- --- VARIABLES D'ÉTAT ---
+
 local AimbotEnabled = false
 local IsAiming = false
 local EspEnabled = false
@@ -15,7 +15,7 @@ local NoclipEnabled = false
 local SpeedEnabled = false
 local WalkSpeedValue = 16
 
--- --- VARIABLES FLY ---
+
 local FlyEnabled = false
 local FlySpeed = 50
 local BodyGyro = nil
@@ -31,7 +31,7 @@ FovCircle.Color = Color3.fromRGB(255, 255, 255)
 FovCircle.Transparency = 1
 FovCircle.Filled = false
 
--- --- FENÊTRE ---
+
 local Window = Rayfield:CreateWindow({
     Name = "By Sysfault",
     LoadingTitle = "Sysfault Hub v4",
@@ -44,7 +44,7 @@ local CombatTab = Window:CreateTab("Combat", 4483362458)
 local MoveTab = Window:CreateTab("Déplacement", 4483362458)
 local VisualTab = Window:CreateTab("Visuel", 4483362458)
 
--- --- SYSTÈME FLY ---
+
 local function StartFly()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
